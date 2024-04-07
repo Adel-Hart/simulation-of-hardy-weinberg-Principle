@@ -1,6 +1,7 @@
 import random
 import simpy
-import numpy
+import datetime
+import pandas as pd
 
 
 entityList = [0]
@@ -8,6 +9,11 @@ entityList = [0]
 listNonMarried = []
 
 isProceeding = True
+
+dfRaw = []
+
+
+comGeneration = 0
 
 
 def chooseGene(mgeneList : list, fgeneList : list): # ex) mgeneList = AA, aa
@@ -28,11 +34,10 @@ def chooseGene(mgeneList : list, fgeneList : list): # ex) mgeneList = AA, aa
 
 
 def improveMakeBABY(env, store):
-    print("start finding")
+    global comGeneration
     while True:
         temp = random.sample(listNonMarried, 2)
         if temp[0].Sex + temp[1].Sex == 1 and temp[0].geneRation == temp[1].geneRation: #다른 성이면 && 같은 세대일 때
-            print("lets'go sex")
             break
         else:
             continue
@@ -75,20 +80,24 @@ def improveMakeBABY(env, store):
     resA = chooseGene(mGeneA, fGeneA) #4개 나옴
     resB = chooseGene(mGeneB, fGeneB)
 
-    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[0] , mEntity, fEntity, resA[0], resB[0], geneRation=mEntity.geneRation+1)
+    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[0] , mEntity.UID, fEntity.UID, resA[0], resB[0], geneRation=mEntity.geneRation+1)
     entityList.append(globals()['entity_%d' % indexNum])
 
     indexNum += 1
-    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[1], mEntity, fEntity, resA[1], resB[0], geneRation=mEntity.geneRation+1)
+    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[1], mEntity.UID, fEntity.UID, resA[1], resB[0], geneRation=mEntity.geneRation+1)
     entityList.append(globals()['entity_%d' % indexNum])
 
     indexNum += 1
-    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[2], mEntity, fEntity, resA[0], resB[1], geneRation=mEntity.geneRation+1)
+    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[2], mEntity.UID, fEntity.UID, resA[0], resB[1], geneRation=mEntity.geneRation+1)
     entityList.append(globals()['entity_%d' % indexNum])
 
     indexNum += 1
-    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[3], mEntity, fEntity, resA[1], resB[1], geneRation=mEntity.geneRation+1)
+    globals()['entity_%d' % indexNum] = entity(indexNum, sexList[3], mEntity.UID, fEntity.UID, resA[1], resB[1], geneRation=mEntity.geneRation+1)
     entityList.append(globals()['entity_%d' % indexNum])
+
+
+    if comGeneration < mEntity.geneRation+1:
+        comGeneration = mEntity.geneRation + 1
 
     yield env.timeout(10)
 
@@ -195,11 +204,14 @@ class entity():
 
         self.geneRation = geneRation
 
+
+        dfRaw.append(list((self.UID, self.Sex, self.geneRation, rootM, rootF, '-'.join(self.geneA), '-'.join(self.geneB)))) #run once
+
         self.startMate()
 
 
     def __str__(self) -> str:
-        print(" UID : {}\n SEX : {}\n MOTHER : {}\n FATHER : {}\n GENE.A : {}\n GENE.B : {}\n".format(self.UID, self.Sex, self.rootM, self.rootF, self.geneA, self.geneB))
+        return " UID : {}\n SEX : {}\n MOTHER : {}\n FATHER : {}\n GENE.A : {}\n GENE.B : {}\n".format(self.UID, self.Sex, self.rootM, self.rootF, self.geneA, self.geneB)
 
 
     def goDead(self):
@@ -264,10 +276,6 @@ initAdamNEve() #set first entity
 
 '''
 
-def setting(env):
-    print("hello")
-
-
             
 
 
@@ -277,11 +285,15 @@ def setup(env):
 
     global helper
     global store
+    global comGeneration
     store = simpy.Store(env, capacity=1000)
 
 
     adamGeneA, adamGeneB = str(input("set ADAM(Male)  >> geneA geneB >>")).split()
     eveGeneA, eveGeneB = str(input("set ADAM(Male)  >> geneA geneB >>")).split()
+    
+    limit = int(input("set limit generation >> "))
+
 
     list(adamGeneA)
     list(adamGeneB)
@@ -294,13 +306,17 @@ def setup(env):
     globals()['entity_2'] = entity(2, 1, 0, 0, eveGeneA, eveGeneB, 0)
     entityList.append(globals()['entity_2'])
 
-    while len(entityList) < 50: #초기 2명에서 4씩 증가 >> 51까지 됨
+    while comGeneration < limit: #초기 2명에서 4씩 증가 >> limit까지 됨(사실 최초 인덱스 0 포함이라 limit + 1개임)
         yield env.process(improveMakeBABY(env,store))
--        print(len(entityList))
+        
+    dfRes = pd.DataFrame(dfRaw, columns=['UID', 'Gender', 'Generation', 'Father', 'Mother', 'GeneA', 'GeneB'])
+    dfRes.to_csv(f"data.csv")
+
 
 
 env = simpy.Environment()
 
 env.process(setup(env))
 env.run()
-print("end")
+
+print("done.")
