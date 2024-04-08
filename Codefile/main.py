@@ -205,7 +205,7 @@ class entity():
         self.geneRation = geneRation
 
 
-        dfRaw.append(list((self.UID, self.Sex, self.geneRation, rootM, rootF, '-'.join(self.geneA), '-'.join(self.geneB)))) #run once
+        dfRaw.append(list((self.UID, self.Sex, self.geneRation, rootM, rootF, '-'.join(self.geneA).replace('a', 'La'), '-'.join(self.geneB).replace('b', 'Lb')))) #run once
 
         self.startMate()
 
