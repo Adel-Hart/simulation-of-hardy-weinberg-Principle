@@ -1,6 +1,7 @@
 import sys
 import os
 import random
+import time
 import pygame
 import threading
 
@@ -22,11 +23,18 @@ onBoardEntity = []
 
 class manager():
     def __init__(self):
-        pass
+        self.isAlive = True
 
-    def move(self): #move entity, run by thread
-        for i in onBoardEntity:
-            i.moving()
+
+    # def move(self, deltaTime): #move entity, run by thread
+    #     prevTime = time.time()
+    #     while self.isAlive:
+    #         nowTime = time.time()
+    #         deltaTime = nowTime - prevTime
+    #         prevTime = nowTime
+
+    #         for i in onBoardEntity:
+    #             i.moving(deltaTime)
 
 class entity(pygame.sprite.Sprite):
     
@@ -35,8 +43,8 @@ class entity(pygame.sprite.Sprite):
 
         self.vec = pygame.Vector2()
         self.vec.xy = x, y
-        self.dir = pygame.Vector2()
-        self.dir = self.dir.normalize()
+        self.dirVec = pygame.Vector2(random.randint(-10, 10), random.randint(-10, 10)) #처음 소환될 때 바라보는 방향은 무작위
+        self.dirVec = self.dirVec.normalize()
 
 
         self.gene = gene
@@ -61,19 +69,35 @@ class entity(pygame.sprite.Sprite):
         gameDisplay.blit(self.img, (self.vec.x, self.vec.y))
         print("blit end")
 
-    def moving(self):
-        self.vec.le
+'''
+움직임 lerp 함수?
+두 좌표 거리 * 비율(deltaTime, 1프레임당 걸린 시간).
+
+
+반복문N(반복 횟수 = N)이라 가정, (0,0)에서 (10, 0) 움직이면
+lerp로 이동할 시
+
+반복문0 = 위치:0 + 1 //거리 10 * 0.1
+반복문1 = 위치:(0 + 1) + 0.9 //거리 9*0.1
+
+이때 비율에 속도도 같이 곱해주면, 속도 정하는 효과 나옴!! 그렇기에, deltaTime을 인자로 받는다.
+
+'''
+
+    def moving(self, deltaTime):
+        self.vec = 
+
 
         printBackground()
         gameDisplay.blit(self.img, (self.vec.x, self.vec.y))
 
 
     def changeRotate(self):
-    
+        self.dirVec.rotate(random.randint(10, 360)*random.randint(-1, 1)) #안돌거나 왼쪽으로 돌거나 오른쪽으로 돌거나
+
 
 
     def OnCollision():
-
         pass
     def checkWall():
         pass
@@ -106,10 +130,19 @@ gameManager = manager()
 test1 = entity(0, 1, 300, 300)
 test1.draw()
 
-#game loop
-while True:
 
-    gameManager.move()
+
+
+
+#game loop
+prevTime = time.time()
+while True:
+    nowTime = time.time()
+    deltaTime = nowTime - prevTime
+    prevTime = nowTime
+
+
+    gameManager.move(deltaTime)
 
 
     pygame.display.update()
