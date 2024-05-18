@@ -8,16 +8,20 @@ import threading
 
 #variable initalize
 
-display_sizeX = 800
-display_sizeY = 1000
 set_fps = 30 #variable
 
 currentPath = os.path.dirname(__file__)
 
-imgPath = os.path.join(currentPath, 'src', 'img')
+imgPath = os.path.join("C:\\Users\\admin\\Desktop\\Task\\hardi-weinberk-Simul", 'src', 'img')
 
-moveSize = 20
+globalMoveSpeed = 10
 
+maxSectionSize = (0, 0, 800, 1000)
+circumSectionSize = (0, 0, 800, 850)  #   ->x, y, w, h
+
+initEntityQuantity = [100, 50, 20]
+
+globalUid = 0
 
 onBoardEntity = []
 
@@ -36,15 +40,53 @@ class manager():
     #         for i in onBoardEntity:
     #             i.moving(deltaTime)
 
+
+    def initSummon(self):
+        global globalUid
+
+        for _ in range(initEntityQuantity[0]):
+            globals()[f'ent-{globalUid}'] = entity(['A', 'A'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globalUid += 1
+
+        for _ in range(initEntityQuantity[1]):
+            globals()[f'ent-{globalUid}'] = entity(['A', 'a'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globalUid += 1
+
+        for _ in range(initEntityQuantity[2]):
+            globals()[f'ent-{globalUid}'] = entity(['a', 'a'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globalUid += 1
+
+        #  위 : 객체 생성
+        #  아래: 화면 표시.
+
+
+
+        for i in onBoardEntity: 
+            i.draw() 
+
+
+    def moveEntity(self, deltaTime):
+        for i in onBoardEntity:
+            i.moving(deltaTime)
+        printBackground()
+
+    def changeDirEntity(self):
+        for i in onBoardEntity:
+            i.changeRotate()
+
+    
+
 class entity(pygame.sprite.Sprite):
     
     def __init__(self, gene, uid, x, y):
         pygame.sprite.Sprite.__init__(self)
 
-        self.vec = pygame.Vector2()
-        self.vec.xy = x, y
-        self.dirVec = pygame.Vector2(random.randint(-10, 10), random.randint(-10, 10)) #처음 소환될 때 바라보는 방향은 무작위
+        self.pos = pygame.Vector2()
+        self.pos.xy = x, y
+        self.dirVec = pygame.Vector2(random.randint(1,10) * randomSign(), random.randint(1,10) * randomSign()) #처음 소환될 때 바라보는 방향은 무작위
         self.dirVec = self.dirVec.normalize()
+        self.moveSpeed = globalMoveSpeed
+
 
 
         self.gene = gene
@@ -53,10 +95,10 @@ class entity(pygame.sprite.Sprite):
 
 
         self.img = miyu
-        self.img = pygame.transform.scale(self.img, (int(miyuImgScale[2] * miyuSize), int(miyuImgScale[3] * miyuSize)))
+        self.img = pygame.transform.scale(self.img, (miyuSizeX, miyuSizeY))
         self.rect = self.img.get_rect()
-        self.rect.centerx = self.vec.x
-        self.rect.centery = self.vec.y
+        self.rect.centerx = self.pos.x
+        self.rect.centery = self.pos.y
     
         onBoardEntity.append(self)
 
@@ -66,10 +108,9 @@ class entity(pygame.sprite.Sprite):
 
     def draw(self):
         print("blit start")
-        gameDisplay.blit(self.img, (self.vec.x, self.vec.y))
+        gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
         print("blit end")
-
-'''
+    '''
 움직임 lerp 함수?
 두 좌표 거리 * 비율(deltaTime, 1프레임당 걸린 시간).
 
@@ -82,25 +123,54 @@ lerp로 이동할 시
 
 이때 비율에 속도도 같이 곱해주면, 속도 정하는 효과 나옴!! 그렇기에, deltaTime을 인자로 받는다.
 
-'''
+    '''
+
 
     def moving(self, deltaTime):
-        self.vec = 
+        self._checkWall()
+        self.pos += self.dirVec * self.moveSpeed * deltaTime
+        self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.
 
-
-        printBackground()
-        gameDisplay.blit(self.img, (self.vec.x, self.vec.y))
+        gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
+        pygame.display.update()
 
 
     def changeRotate(self):
-        self.dirVec.rotate(random.randint(10, 360)*random.randint(-1, 1)) #안돌거나 왼쪽으로 돌거나 오른쪽으로 돌거나
-
+        self.dirVec = self.dirVec.rotate(random.randint(1, 359)) 
+        # * random.choice((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1)) 안돌거나 왼쪽으로 돌거나 오른쪽으로 돌거나 (확률 다름)
 
 
     def OnCollision():
         pass
-    def checkWall():
-        pass
+
+
+    def _checkWall(self): #히트 박스 끝이 벽에 나가면, 방향만 바꿈!!! (움직이는건 moving에서)   !moving에서 실행 됨.!
+        if self.rect.centerx + miyuSizeX / 2 >= circumSectionSize[2]:
+
+            
+
+            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(-1, 0)) #<- 방향의 법선벡터 기준으로 전반사
+
+            
+
+        elif self.rect.centerx - miyuSizeX / 2 <= 0:
+            
+
+            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(1, 0)) #-> 방향의 법선벡터 기준으로 전반사
+
+            
+
+        elif self.rect.centery - miyuSizeY / 2 <= 0:
+            
+
+            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, -1)) # V 방향의 법선벡터 기준으로 전반사
+
+            
+ 
+        elif self.rect.centery + miyuSizeY / 2 >= circumSectionSize[3]:
+            
+
+            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, 1)) # ^ 방향의 법선벡터 기준으로 전반사
 
     def dead(self):
         None
@@ -108,7 +178,10 @@ lerp로 이동할 시
 
 def printBackground():
     gameDisplay.fill((255, 255, 255))
-    pygame.draw.rect(gameDisplay, (0, 0, 0), (0, 0, 600, 1000))
+    pygame.draw.rect(gameDisplay, (0, 0, 0), circumSectionSize)
+
+def randomSign():
+    return 1 if random.random() < 0.5 else -1
 
 
 #sys initialize
@@ -116,33 +189,44 @@ def printBackground():
 
 pygame.init()
 gameFrame = pygame.time.Clock()
-gameDisplay = pygame.display.set_mode((display_sizeX, display_sizeY))
+gameDisplay = pygame.display.set_mode((maxSectionSize[2], maxSectionSize[3]))
 gameDisplay.fill((255, 255, 255))
+
+
 
 miyu = pygame.image.load(os.path.join(imgPath, 'miyu.png'))
 miyuImgScale = miyu.get_rect()
-print(miyuImgScale)
-miyuSize = 0.05
 
-pygame.draw.rect(gameDisplay, (0, 0, 0), (0, 0, 600, 1000))
+miyuSizeRatio = .01
 
-gameManager = manager() 
-test1 = entity(0, 1, 300, 300)
-test1.draw()
+miyuSizeX = int(miyuImgScale[2] * miyuSizeRatio)
+miyuSizeY = int(miyuImgScale[3] * miyuSizeRatio)
 
 
+
+#배경 설정
+pygame.draw.rect(gameDisplay, (0, 0, 0), circumSectionSize)
+
+gameManager = manager()
+
+gameManager.initSummon()
 
 
 
 #game loop
 prevTime = time.time()
+
+one = 0
 while True:
     nowTime = time.time()
     deltaTime = nowTime - prevTime
     prevTime = nowTime
 
 
-    gameManager.move(deltaTime)
+    gameManager.changeDirEntity()
+    gameManager.moveEntity(deltaTime)
+
+
 
 
     pygame.display.update()
@@ -192,7 +276,7 @@ class entityManager():
         pass
 
 
-    def checkWall():
+    def _checkWall():
         pass
 
 
