@@ -3,7 +3,7 @@ import os
 import random
 import time
 import pygame
-import threading
+import matplotlib
 
 
 #variable initalize
@@ -15,6 +15,8 @@ currentPath = os.path.dirname(__file__)
 imgPath = os.path.join("C:\\Users\\bepue\\Desktop\\Task\\Simulation-Hardy-Weinberg", 'src', 'img')
 
 globalMoveSpeed = 100
+globalAge = 30 #second
+
 
 maxSectionSize = (0, 0, 800, 800)
 circumSectionSize = (0, 0, 800, 650)  #   ->x, y, w, h
@@ -75,6 +77,18 @@ class manager():
             i.changeRotate()
 
     
+    def killEntity(self):
+        now = time.time()
+        for i in onBoardEntity:
+            now = time.time()
+            if now - i.birth > 30:
+                i.dead()
+            else:
+                pass
+
+
+
+    
 
 class entity(pygame.sprite.Sprite):
     
@@ -90,7 +104,7 @@ class entity(pygame.sprite.Sprite):
         self.changeStack = 0
 
 
-
+        self.birth = time.time()
         self.gene = gene
         self.uid = uid
         self.isMated = False
@@ -107,6 +121,10 @@ class entity(pygame.sprite.Sprite):
 
     def __str__(self):
         print(self.uid)
+
+
+    def __del__(self):
+        print(self.uid, "사망.")
 
     def draw(self):
         gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
@@ -152,7 +170,7 @@ lerp로 이동할 시
 
 
     def _checkWall(self): #히트 박스 끝이 벽에 나가면, 방향 바꾸고 3배 이동. !moving에서 실행 됨.!
-        if self.rect.centerx + miyuSizeX / 2 >= circumSectionSize[2]:
+        if self.rect.centerx + miyuSizeX / 2 >= circumSectionSize[2] - 2:
 
             
 
@@ -161,7 +179,7 @@ lerp로 이동할 시
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
 
-        elif self.rect.centerx - miyuSizeX / 2 <= 0:
+        elif self.rect.centerx - miyuSizeX / 2 <= 0 + 2:
             
 
             self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(1, 0)) #-> 방향의 법선벡터 기준으로 전반사
@@ -170,7 +188,7 @@ lerp로 이동할 시
             
             
 
-        elif self.rect.centery - miyuSizeY / 2 <= 0:
+        if self.rect.centery - miyuSizeY / 2 <= 0 + 2:
             
 
             self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, -1)) # V 방향의 법선벡터 기준으로 전반사
@@ -179,7 +197,7 @@ lerp로 이동할 시
             
             
  
-        elif self.rect.centery + miyuSizeY / 2 >= circumSectionSize[3]:
+        elif self.rect.centery + miyuSizeY / 2 >= circumSectionSize[3] - 2:
             
 
             self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, 1)) # ^ 방향의 법선벡터 기준으로 전반사
@@ -191,7 +209,9 @@ lerp로 이동할 시
 
 
     def dead(self):
-        None
+        onBoardEntity.remove(self)
+        del self
+
 
 
 def printBackground():
@@ -240,17 +260,17 @@ while True:
     prevTime = nowTime
 
 
-
+    gameManager.killEntity()
     gameManager.changeDirEntity()
     printBackground()
     gameManager.moveEntity(deltaTime)
-
+    
 
 
 
     pygame.display.update()
     for event in pygame.event.get():    
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or event.key == pygame.K_q:
             pygame.quit()
             sys.exit()
 
