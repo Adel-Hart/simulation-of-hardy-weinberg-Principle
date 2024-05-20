@@ -15,19 +15,68 @@ currentPath = os.path.dirname(__file__)
 imgPath = os.path.join("C:\\Users\\bepue\\Desktop\\Task\\Simulation-Hardy-Weinberg", 'src', 'img')
 
 globalMoveSpeed = 100
-globalAge = 30 #second
-
+globalAge = 15 #second
+globalChildNum = 2
 
 maxSectionSize = (0, 0, 800, 800)
 circumSectionSize = (0, 0, 800, 650)  #   ->x, y, w, h
 
-initEntityQuantity = [100, 50, 20]
+
+
+
+initEntityQuantity = [50, 100, 25]
 
 globalUid = 0
 
 onBoardEntity = []
 
+
+class Button():
+    def __init__(self, color, hlColor, inText, textSize, textColor, x, y, sizeX, sizeY, action = None):
+        
+        self.mousePos = pygame.mouse.get_pos()
+        self.isClick = pygame.mouse.get_pressed()
+
+        self.btnFont = pygame.font.SysFont("arial", int(textSize))
+        self.text = self.btnFont.render(inText, True, textColor)
+
+
+
+        if (x + sizeX) >= self.mousePos[0] >= x and (y + sizeY) >= self.mousePos[1] >= y:
+
+            btn = pygame.draw.rect(gameDisplay, hlColor, [x, y, sizeX, sizeY])
+            gameDisplay.blit(self.text, (btn.centerx, btn.centery))
+            #gameDisplay.blit(btn, (x, y))
+
+
+            if self.isClick[0] and action != None:
+                action()
+    
+
+        else:
+            btn = pygame.draw.rect(gameDisplay, color, [x, y, sizeX, sizeY])
+            gameDisplay.blit(self.text, (btn.centerx, btn.centery))
+            #gameDisplay.blit(btn, (x, y))
+
+
+
+class text():
+    def __init__(self, textContent, pos : tuple, color : tuple, fontSize):
+        self.textContent = textContent
+        self.fontSize = fontSize
+        self.color = color
+        self.pos = pos
+
+
+        self.textFont = pygame.font.SysFont("arial", self.fontSize)
+        self.text = self.textFont.render(self.textContent, True, self.color)
+        gameDisplay.blit(self.text, pos)
+
+
+
+
 class manager():
+    
     def __init__(self):
         self.isAlive = True
 
@@ -72,23 +121,84 @@ class manager():
             i.moving(deltaTime)
 
 
-    def changeDirEntity(self):
-        for i in onBoardEntity:
-            i.changeRotate()
 
     
     def killEntity(self):
+        global globalAge
         now = time.time()
         for i in onBoardEntity:
             now = time.time()
-            if now - i.birth > 30:
+            if i.isMated and now - i.birth > globalAge: #자식있고, 나이 일정 지나면
                 i.dead()
+                
             else:
                 pass
 
 
+    def coupleEntity(self):
+        tempCouple = []
+        for i in onBoardEntity:
+            if not i.isMated and not i.isMating:
+                tempCouple.append(i)
+            else:
+                pass
+        if len(tempCouple) != 0:
+            for i in range(len(tempCouple) // 2):
 
-    
+                ent1 = random.choice(tempCouple)
+                tempCouple.remove(ent1)
+                ent2 = random.choice(tempCouple)
+                tempCouple.remove(ent2)
+
+                ent1.oper = ent2
+                ent2.oper = ent1
+
+                ent1.isMating = True
+                ent2.isMating = True #서로를 향해 움직이게.
+
+
+
+
+
+
+
+            
+    def matingEntity(self, ent1, ent2):
+        global globalUid
+        global globalChildNum
+
+        newGene = [random.choice(ent1.gene), random.choice(ent2.gene)]
+
+        for i in range(globalChildNum):
+
+            globals()[f'ent-{globalUid}'] = entity(newGene, globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globalUid += 1
+
+
+        ent1.isMating = False
+        ent2.isMating = False
+        ent1.isMated = True
+        ent2.isMated = True
+        ent1.stop = False
+        ent2.stop = False
+
+
+
+    def detectCollide(self):
+
+        for i in onBoardEntity:
+            if i.isMating:    
+                collide = i.rect.colliderect(i.oper.rect) #짝이랑 부딛히면
+                if collide:
+                    print("detected", i.uid, i.oper.uid)
+
+                    i.OnCollision()
+                    i.oper.OnCollision() #멈추기.
+
+                    self.matingEntity(i, i.oper) #짝짓기 시작
+
+
+        
 
 class entity(pygame.sprite.Sprite):
     
@@ -108,7 +218,11 @@ class entity(pygame.sprite.Sprite):
         self.gene = gene
         self.uid = uid
         self.isMated = False
+        self.isMating = False
+        self.stop = False
 
+
+        self.oper = None
 
         self.img = miyu
         self.img = pygame.transform.scale(self.img, (miyuSizeX, miyuSizeY))
@@ -124,7 +238,7 @@ class entity(pygame.sprite.Sprite):
 
 
     def __del__(self):
-        print(self.uid, "사망.")
+        pass
 
     def draw(self):
         gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
@@ -146,16 +260,25 @@ lerp로 이동할 시
 
     def moving(self, deltaTime):
         self._checkWall()
-        self.pos += self.dirVec * self.moveSpeed * deltaTime
-        self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.
+
+        if self.stop:
+            pass
+        else:
+            if self.isMating and self.oper != None: #짝짓기 시작하면, 상대를 향해 움직임.
+                self._go2Lover(self.oper)
+
+            else:
+                self._changeRotate()
+                self.pos += self.dirVec * self.moveSpeed * deltaTime
+                self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.
 
         gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
         #pygame.display.update()
 
 
-    def changeRotate(self):
+    def _changeRotate(self):
         
-        if self.changeStack > 100: #가끔만 움직이게
+        if self.changeStack > random.randrange(50, 100): #가끔만 움직이게
 
             self.dirVec = self.dirVec.rotate(random.randint(1, 359)) 
             # * random.choice((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1)) 안돌거나 왼쪽으로 돌거나 오른쪽으로 돌거나 (확률 다름)
@@ -165,8 +288,10 @@ lerp로 이동할 시
 
 
 
-    def OnCollision():
-        pass
+    def OnCollision(self):
+        #멈추고(여기서), 짝짓기 시작(충돌 감지 함수에서).
+
+        self.stop = True
 
 
     def _checkWall(self): #히트 박스 끝이 벽에 나가면, 방향 바꾸고 3배 이동. !moving에서 실행 됨.!
@@ -204,6 +329,13 @@ lerp로 이동할 시
             self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
+
+    def _go2Lover(self, oper): #mating 진행중일 땐, move 대신해서 실행됨.
+        self.dirVec = self.oper.pos - self.pos #상대를 향함
+        print(self.dirVec)
+        self.dirVec = self.dirVec.normalize()
+        self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+        self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점. 
 
 
 
@@ -260,17 +392,23 @@ while True:
     prevTime = nowTime
 
 
-    gameManager.killEntity()
-    gameManager.changeDirEntity()
-    printBackground()
-    gameManager.moveEntity(deltaTime)
     
 
+    gameManager.killEntity()
+    printBackground()
+    gameManager.moveEntity(deltaTime)
+    gameManager.coupleEntity()
+    gameManager.detectCollide()
+
+    #gui section
+
+    testBtn = Button((102, 52, 153), (148, 0, 211), "test", 15, (0, 0, 0), 600, 700, 100, 50, gameManager.coupleEntity)
+    amountTxt = text(f"entity amount:{len(onBoardEntity)}", (400, 700), (0, 0, 0), 20)
 
 
     pygame.display.update()
     for event in pygame.event.get():    
-        if event.type == pygame.QUIT or event.key == pygame.K_q:
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
@@ -307,16 +445,5 @@ w 빈도 : q^2 + pq = "
     근친 불가.
 
 '''
-class entityManager():
-    def __init__(self) -> None:
-        pass
-
-    def creatInitEntity():
-        pass
-
-
-    def _checkWall():
-        pass
-
 
 
