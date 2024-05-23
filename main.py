@@ -1,9 +1,11 @@
 import sys
 import os
 import random
+import threading
 import time
 import pygame
-import matplotlib
+import pyautogui
+
 
 
 #variable initalize
@@ -14,25 +16,64 @@ currentPath = os.path.dirname(__file__)
 
 imgPath = os.path.join("C:\\Users\\bepue\\Desktop\\Task\\Simulation-Hardy-Weinberg", 'src', 'img')
 
-globalMoveSpeed = 100
-globalAge = 15 #second
-globalChildNum = 2
+#graph Setting
 
-maxSectionSize = (0, 0, 800, 800)
-circumSectionSize = (0, 0, 800, 650)  #   ->x, y, w, h
+#https://pypi.org/project/pygame-matplotlib/, pip install pygame-matplotlib
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy
+matplotlib.use('module://pygame_matplotlib.backend_pygame')
+
+label = ["AA", "Aa(aA)", "aa"]
+index = numpy.arange(len(label))
+
+    #run by "showChart" Func
 
 
 
+#set display
+#세로 크기에 맞춤.
 
-initEntityQuantity = [50, 100, 25]
+displayHeight = pyautogui.size()[1] - 200
+
+widthRatio = 0.9 #var
+
+circumSectionHeight = 200 #var
+
+print(displayHeight)
+
+maxSectionSize = (0, 0, displayHeight * widthRatio, displayHeight)
+circumSectionSize = (0, 0, displayHeight * widthRatio, displayHeight - circumSectionHeight)  #   ->x, y, w, h
+
+threadAlive = True
+
+
+
 
 globalUid = 0
 
 onBoardEntity = []
 
 
+
+##사용자 변경
+
+# --초기 세팅 --
+globalMoveSpeed = 100
+globalAge = 15 #second
+globalChildNum = 2
+
+# --실험 중 가변 세팅 --
+allowIncest = False #근친가능 설정.
+
+
+
+
+initEntityQuantity = [50, 100, 25]
+
+
 class Button():
-    def __init__(self, color, hlColor, inText, textSize, textColor, x, y, sizeX, sizeY, action = None):
+    def __init__(self, color, hlColor, inText, textSize, textColor, x, y, sizeX, sizeY, action = None, parm = None):
         
         self.mousePos = pygame.mouse.get_pos()
         self.isClick = pygame.mouse.get_pressed()
@@ -50,7 +91,7 @@ class Button():
 
 
             if self.isClick[0] and action != None:
-                action()
+                action(parm)
     
 
         else:
@@ -96,15 +137,15 @@ class manager():
         global globalUid
 
         for _ in range(initEntityQuantity[0]):
-            globals()[f'ent-{globalUid}'] = entity(['A', 'A'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globals()[f'ent-{globalUid}'] = entity(['A', 'A'], globalUid, random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)), random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)))
             globalUid += 1
 
         for _ in range(initEntityQuantity[1]):
-            globals()[f'ent-{globalUid}'] = entity(['A', 'a'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globals()[f'ent-{globalUid}'] = entity(['A', 'a'], globalUid, random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)), random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)))
             globalUid += 1
 
         for _ in range(initEntityQuantity[2]):
-            globals()[f'ent-{globalUid}'] = entity(['a', 'a'], globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globals()[f'ent-{globalUid}'] = entity(['a', 'a'], globalUid, random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)), random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)))
             globalUid += 1
 
         #  위 : 객체 생성
@@ -137,11 +178,17 @@ class manager():
 
     def coupleEntity(self):
         tempCouple = []
+        
         for i in onBoardEntity:
-            if not i.isMated and not i.isMating:
+             
+            if allowIncest: #근친 허용 모드
                 tempCouple.append(i)
             else:
-                pass
+
+                if not i.isMated and not i.isMating: #교배경험o or 교배 중인경우 아닐 때만 선별.
+                    tempCouple.append(i)
+                else:
+                    pass
         if len(tempCouple) != 0:
             for i in range(len(tempCouple) // 2):
 
@@ -171,7 +218,7 @@ class manager():
 
         for i in range(globalChildNum):
 
-            globals()[f'ent-{globalUid}'] = entity(newGene, globalUid, random.randrange(circumSectionSize[2] - miyuSizeX * 2), random.randrange(circumSectionSize[3] - miyuSizeY * 2))
+            globals()[f'ent-{globalUid}'] = entity(newGene, globalUid, random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)), random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)))
             globalUid += 1
 
 
@@ -190,7 +237,6 @@ class manager():
             if i.isMating:    
                 collide = i.rect.colliderect(i.oper.rect) #짝이랑 부딛히면
                 if collide:
-                    print("detected", i.uid, i.oper.uid)
 
                     i.OnCollision()
                     i.oper.OnCollision() #멈추기.
@@ -198,7 +244,10 @@ class manager():
                     self.matingEntity(i, i.oper) #짝짓기 시작
 
 
-        
+    
+
+
+
 
 class entity(pygame.sprite.Sprite):
     
@@ -259,18 +308,27 @@ lerp로 이동할 시
 
 
     def moving(self, deltaTime):
-        self._checkWall()
 
         if self.stop:
             pass
         else:
-            if self.isMating and self.oper != None: #짝짓기 시작하면, 상대를 향해 움직임.
-                self._go2Lover(self.oper)
+            
+
+            if self._checkWall(): #벽을 넘으면, 다른 움직임 전부 멈추고 중앙을 향해서만 움직이기
+                self.dirVec = (pygame.Vector2(circumSectionSize[2] // 2, circumSectionSize[3] // 2) - self.pos).normalize()
+                self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+                self.rect.x, self.rect.y = self.pos
+
 
             else:
-                self._changeRotate()
-                self.pos += self.dirVec * self.moveSpeed * deltaTime
-                self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.
+
+                if self.isMating and self.oper != None: #짝짓기 시작하면, 상대를 향해 움직임.
+                    self._go2Lover(self.oper) #벽 튕기기랑 겹침.
+
+                else:
+                    self._changeRotate()
+                    self.pos += self.dirVec * self.moveSpeed * deltaTime
+                    self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.
 
         gameDisplay.blit(self.img, (self.pos.x, self.pos.y))
         #pygame.display.update()
@@ -295,48 +353,59 @@ lerp로 이동할 시
 
 
     def _checkWall(self): #히트 박스 끝이 벽에 나가면, 방향 바꾸고 3배 이동. !moving에서 실행 됨.!
-        if self.rect.centerx + miyuSizeX / 2 >= circumSectionSize[2] - 2:
+        if self.rect.centerx + miyuSizeX / 2 > circumSectionSize[2]:
 
+            return True
             
 
-            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(-1, 0)) #<- 방향의 법선벡터 기준으로 전반사
-            self.pos += self.dirVec * self.moveSpeed * deltaTime * 10
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
 
-        elif self.rect.centerx - miyuSizeX / 2 <= 0 + 2:
-            
+        elif self.rect.centerx - miyuSizeX / 2 < 0:
 
-            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(1, 0)) #-> 방향의 법선벡터 기준으로 전반사
-            self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+            return True
+            
+            self.__tp((self.pos.x + (circumSectionSize[2] - miyuSizeX), self.pos.y), self.dirVec)
+
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
-            
+        
 
-        if self.rect.centery - miyuSizeY / 2 <= 0 + 2:
+        if self.rect.centery - miyuSizeY / 2 < 0:
             
+            return True
 
-            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, -1)) # V 방향의 법선벡터 기준으로 전반사
-            self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+            self.__tp((self.pos.x - (circumSectionSize[3] + miyuSizeY), self.pos.y), self.dirVec)
+
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
             
  
-        elif self.rect.centery + miyuSizeY / 2 >= circumSectionSize[3] - 2:
-            
+        elif self.rect.centery + miyuSizeY / 2 > circumSectionSize[3]:
 
-            self.dirVec = pygame.Vector2.reflect(self.dirVec, pygame.Vector2(0, 1)) # ^ 방향의 법선벡터 기준으로 전반사
-            self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+        
+            return True
+
+            self.__tp((self.pos.x - (circumSectionSize[3] - miyuSizeY), self.pos.y), self.dirVec)            
+
             self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점.     
             
 
+
     def _go2Lover(self, oper): #mating 진행중일 땐, move 대신해서 실행됨.
         self.dirVec = self.oper.pos - self.pos #상대를 향함
-        print(self.dirVec)
         self.dirVec = self.dirVec.normalize()
-        self.pos += self.dirVec * self.moveSpeed * deltaTime * 3
+        self.pos += self.dirVec * self.moveSpeed * deltaTime * 1
+
         self.rect.x, self.rect.y = self.pos #rect 와 pos 는 왼쪽 상단이 기준점. 
 
+
+
+    def __tp(self, pos, dir):
+
+        self.pos = pygame.Vector2(pos)
+        self.dirVec = dir
+        self.rect.x, self.rect.y = self.pos    
 
 
 
@@ -354,6 +423,32 @@ def randomSign():
     return 1 if random.random() < 0.5 else -1
 
 
+def showChart():
+    AA = 0
+    Aa = 0
+    aa = 0
+
+
+    for i in onBoardEntity:
+        gene = i.gene
+        resGene = ''.join(gene)
+
+        if resGene == "AA":
+            AA += 1
+        elif resGene == "aa":
+            aa += 1
+        else:
+            Aa += 1
+
+
+    plt.bar(index, [AA, Aa, aa], align='edge', edgecolor = 'lightgray', linewidth=3, color = ['r', 'g', 'b'])
+    plt.xlabel('Dna')
+    plt.ylabel('amount')
+    plt.xticks(index, label)
+    
+    plt.show()
+
+
 #sys initialize
 
 
@@ -362,6 +457,8 @@ gameFrame = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((maxSectionSize[2], maxSectionSize[3]))
 gameDisplay.fill((255, 255, 255))
 
+# showGrpThread = threading.Thread(target=showGrp)
+# showGrpThread.start()
 
 
 miyu = pygame.image.load(os.path.join(imgPath, 'miyu.png'))
@@ -385,30 +482,31 @@ gameManager.initSummon()
 #game loop
 prevTime = time.time()
 
-one = 0
 while True:
+    
     nowTime = time.time()
     deltaTime = nowTime - prevTime
     prevTime = nowTime
 
-
-    
-
     gameManager.killEntity()
+    
     printBackground()
     gameManager.moveEntity(deltaTime)
     gameManager.coupleEntity()
     gameManager.detectCollide()
 
+    showChart()
+
     #gui section
 
-    testBtn = Button((102, 52, 153), (148, 0, 211), "test", 15, (0, 0, 0), 600, 700, 100, 50, gameManager.coupleEntity)
+    #testBtn = Button((102, 52, 153), (148, 0, 211), "allow incest", 15, (0, 0, 0), 600, 700, 100, 50, grp.showGraph, lambda: allowIncest = not allowIncest)
     amountTxt = text(f"entity amount:{len(onBoardEntity)}", (400, 700), (0, 0, 0), 20)
 
 
     pygame.display.update()
     for event in pygame.event.get():    
         if event.type == pygame.QUIT:
+            threadAlive = False #스레드 종료
             pygame.quit()
             sys.exit()
 
