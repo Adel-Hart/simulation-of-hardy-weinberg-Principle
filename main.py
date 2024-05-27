@@ -382,6 +382,16 @@ class entity(pygame.sprite.Sprite):
 
         self.oper = None
 
+        if ''.join(gene) == "AA":
+            self.img = miyu_Green
+            
+        elif ''.join(gene) == "aa":
+            self.img = miyu_Pink
+        else:
+            self.img = miyu
+
+
+            
         self.img = miyu
         self.img = pygame.transform.scale(self.img, (miyuSizeX, miyuSizeY))
         self.rect = self.img.get_rect()
@@ -581,6 +591,9 @@ gameDisplay.fill((255, 255, 255))
 
 
 miyu = pygame.image.load(os.path.join(imgPath, 'miyu.png'))
+miyu_Green = pygame.image.load(os.path.join(imgPath, 'miyu_green.png'))
+miyu_Pink = pygame.image.load(os.path.join(imgPath, 'miyu_pink.png'))
+
 miyuImgScale = miyu.get_rect()
 
 miyuSizeRatio = .01
