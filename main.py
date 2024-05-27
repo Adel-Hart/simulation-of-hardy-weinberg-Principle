@@ -5,7 +5,7 @@ import threading
 import time
 import pygame
 import pyautogui
-
+import showGraph
 
 
 #variable initalize
@@ -19,15 +19,6 @@ imgPath = os.path.join("C:\\Users\\bepue\\Desktop\\Task\\Simulation-Hardy-Weinbe
 #graph Setting
 
 #https://pypi.org/project/pygame-matplotlib/, pip install pygame-matplotlib
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy
-matplotlib.use('module://pygame_matplotlib.backend_pygame')
-
-label = ["AA", "Aa(aA)", "aa"]
-index = numpy.arange(len(label))
-
-    #run by "showChart" Func
 
 
 
@@ -59,9 +50,9 @@ onBoardEntity = []
 ##사용자 변경
 
 # --초기 세팅 --
-globalMoveSpeed = 100
-globalAge = 15 #second
-globalChildNum = 2
+globalMoveSpeed = 50
+globalAge = 4 #second
+globalChildNum = 6
 
 # --실험 중 가변 세팅 --
 allowIncest = False #근친가능 설정.
@@ -69,7 +60,7 @@ allowIncest = False #근친가능 설정.
 
 
 
-initEntityQuantity = [50, 100, 25]
+initEntityQuantity = [100, 200, 100]
 
 
 class Button():
@@ -169,7 +160,7 @@ class manager():
         now = time.time()
         for i in onBoardEntity:
             now = time.time()
-            if i.isMated and now - i.birth > globalAge: #자식있고, 나이 일정 지나면
+            if now - i.birth > globalAge: #자식있고, 나이 일정 지나면
                 i.dead()
                 
             else:
@@ -423,30 +414,9 @@ def randomSign():
     return 1 if random.random() < 0.5 else -1
 
 
-def showChart():
-    AA = 0
-    Aa = 0
-    aa = 0
-
-
-    for i in onBoardEntity:
-        gene = i.gene
-        resGene = ''.join(gene)
-
-        if resGene == "AA":
-            AA += 1
-        elif resGene == "aa":
-            aa += 1
-        else:
-            Aa += 1
-
-
-    plt.bar(index, [AA, Aa, aa], align='edge', edgecolor = 'lightgray', linewidth=3, color = ['r', 'g', 'b'])
-    plt.xlabel('Dna')
-    plt.ylabel('amount')
-    plt.xticks(index, label)
-    
-    plt.show()
+def showGrp():
+    while threadAlive:
+        showGraph.showGraph(onBoardEntity)
 
 
 #sys initialize
@@ -457,8 +427,8 @@ gameFrame = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((maxSectionSize[2], maxSectionSize[3]))
 gameDisplay.fill((255, 255, 255))
 
-# showGrpThread = threading.Thread(target=showGrp)
-# showGrpThread.start()
+showGrpThread = threading.Thread(target=showGrp)
+showGrpThread.start()
 
 
 miyu = pygame.image.load(os.path.join(imgPath, 'miyu.png'))
@@ -495,7 +465,6 @@ while True:
     gameManager.coupleEntity()
     gameManager.detectCollide()
 
-    showChart()
 
     #gui section
 

@@ -5,7 +5,7 @@ import numpy
 plt.ion()
 x = numpy.arange(3)
 
-def showGraph(entities : list, pos : tuple):
+def showGraph(entities : list):
 
     horiz = ["AA", "Aa(aA)", "aa"]
     vertic = []
@@ -28,8 +28,6 @@ def showGraph(entities : list, pos : tuple):
     
 
     vertic = [AA, Aa, aa]
-
-    plt.figure(num=1, figsize=[pos[0], pos[1]])
 
 
 
