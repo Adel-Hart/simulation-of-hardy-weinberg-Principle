@@ -32,9 +32,11 @@ def showGraph(entities : list):
 
 
 
-    plt.bar(x, vertic, align='edge', edgecolor = 'lightgray', linewidth=3, color = ['r', 'g', 'b'])
+    bar = plt.bar(x, vertic, align='edge', edgecolor = 'lightgray', linewidth=3, color = ['r', 'g', 'b'])
     plt.xticks(x, horiz)
     
+    for i, j in enumerate(bar):
+        plt.text(i, j.get_height() + 0.2, vertic[i], ha='center')
 
 
     plt.show()
