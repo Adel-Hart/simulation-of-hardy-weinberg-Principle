@@ -391,8 +391,6 @@ class entity(pygame.sprite.Sprite):
             self.img = miyu
 
 
-            
-        self.img = miyu
         self.img = pygame.transform.scale(self.img, (miyuSizeX, miyuSizeY))
         self.rect = self.img.get_rect()
         self.rect.x = self.pos.x
