@@ -34,6 +34,8 @@ def showGraph(entities : list):
 
     plt.bar(x, vertic, align='edge', edgecolor = 'lightgray', linewidth=3, color = ['r', 'g', 'b'])
     plt.xticks(x, horiz)
+    
+
 
     plt.show()
     plt.pause(0.2)

@@ -1,7 +1,6 @@
 import sys
 import os
 import random
-import threading
 import time
 import pygame
 import pyautogui
@@ -14,7 +13,7 @@ set_fps = 60 #variable
 
 currentPath = os.path.dirname(__file__)
 
-imgPath = os.path.join("C:\\Users\\bepue\\Desktop\\Task\\Simulation-Hardy-Weinberg", 'src', 'img')
+imgPath = os.path.join(os.getcwd(), 'src', 'img')
 
 #graph Setting
 '''
@@ -36,15 +35,15 @@ index = numpy.arange(len(label))
 
 displayHeight = pyautogui.size()[1] - 200
 
-widthRatio = 0.9 #var
+widthRatio = 1.2 #var
 
 circumSectionHeight = 200 #var
 
 print(displayHeight)
 
 maxSectionSize = (0, 0, displayHeight * widthRatio, displayHeight)
-circumSectionSize = (0, 0, displayHeight * widthRatio, displayHeight - circumSectionHeight)  #   ->x, y, w, h
-guiSectionSize = (0, 0, maxSectionSize[2] - circumSectionSize[2], maxSectionSize[3] - circumSectionSize[3])
+circumSectionSize = (0, 0, displayHeight * widthRatio - 400, displayHeight - circumSectionHeight)  #   ->x, y, w, h
+guiSectionSize = (0, 0, 0, maxSectionSize[3] - circumSectionSize[3])
 
 
 threadAlive = True
@@ -55,7 +54,7 @@ threadAlive = True
 globalUid = 0
 
 onBoardEntity = []
-
+notMatedEntity = []
 
 
 ##사용자 변경
@@ -70,16 +69,18 @@ globalHealth = 20 #기본 체력
 allowIncest = False #근친가능 설정.
 
 
+getInitGenesAA = input("AA 수 : ")
+getInitGenesAa = input("Aa(aA) 수 : ")
+getInitGenesaa = input("aa 수 : ")
 
-
-initEntityQuantity = [50, 100, 25]
+initEntityQuantity = [int(getInitGenesAA), int(getInitGenesAa), int(getInitGenesaa)]
 
 
 class Button():
     def __init__(self, color, hlColor, inText, textSize, textColor, x, y, sizeX, sizeY, action = None, parm = None):
         
         self.mousePos = pygame.mouse.get_pos()
-        self.isClick = pygame.mouse.get_pressed()
+        self.isClicked = pygame.mouse.get_pressed()
 
         self.btnFont = pygame.font.SysFont("arial", int(textSize))
         self.text = self.btnFont.render(inText, True, textColor)
@@ -87,19 +88,19 @@ class Button():
 
 
         if (x + sizeX) >= self.mousePos[0] >= x and (y + sizeY) >= self.mousePos[1] >= y:
-
+            
             btn = pygame.draw.rect(gameDisplay, hlColor, [x, y, sizeX, sizeY])
-            gameDisplay.blit(self.text, (btn.centerx, btn.centery))
+            txtSize = self.text.get_rect()
+            gameDisplay.blit(self.text, (btn.centerx - txtSize.width // 2, btn.centery - txtSize.height // 2))
             #gameDisplay.blit(btn, (x, y))
 
-
-            if self.isClick[0] and action != None:
+            if self.isClicked[0] and action != None:
                 action(parm)
-    
 
         else:
             btn = pygame.draw.rect(gameDisplay, color, [x, y, sizeX, sizeY])
-            gameDisplay.blit(self.text, (btn.centerx, btn.centery))
+            txtSize = self.text.get_rect()
+            gameDisplay.blit(self.text, (btn.centerx - txtSize.width // 2, btn.centery - txtSize.height // 2))
             #gameDisplay.blit(btn, (x, y))
 
 
@@ -205,10 +206,10 @@ class gameManager():
     
     def killEntity(self):
         global globalAge
-        now = time.time()
+        #now = time.time()
         for i in onBoardEntity:
-            now = time.time()
-            if now - i.birth > i.destinyAge: #나이 일정 지나면 or 체력이 0 이하면
+            #now = time.time()
+            if i.isMated: #교배 했다면
                 i.dead()
                 
             else:
@@ -216,13 +217,16 @@ class gameManager():
 
 
     def coupleEntity(self):
+        global notMatedEntity
         tempCouple = []
         notCase = False
-        
+        notMatedEntity = [] #초기화
+
         for i in onBoardEntity:
 
             if not i.isMated and not i.isMating: #교배 중인경우 아닐 때만 선별.
                 tempCouple.append(i)
+                notMatedEntity.append(i)
             else:
                 pass
         if len(tempCouple) != 0:
@@ -269,6 +273,8 @@ class gameManager():
                                                     ) #슈퍼 유전자는 슈퍼유전자를 따라감.
             globalUid += 1
 
+        notMatedEntity.remove(ent1)
+        notMatedEntity.remove(ent2)
 
         ent1.isMating = False
         ent2.isMating = False
@@ -276,6 +282,7 @@ class gameManager():
         ent2.isMated = True
         ent1.stop = False
         ent2.stop = False
+        
 
 
 
@@ -477,7 +484,6 @@ lerp로 이동할 시
             self.rect.y = self.pos.y
 
             self.destinyAge += 1
-            self.health += 10
             self.moveSpeed *= 2
 
             self.isSuper = True
@@ -504,9 +510,15 @@ def randomSign():
     return 1 if random.random() < 0.5 else -1
 
 
-def showGrp():
-    while threadAlive:
-        showGraph.showGraph(onBoardEntity)
+def showGrp(wht = None):
+    if wht == None:
+        return
+    showGraph.showGraph(wht)
+
+
+def setSign(state : bool = False):
+    global isNextStep
+    isNextStep = state
 
 
 #sys initialize
@@ -517,8 +529,6 @@ gameFrame = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((maxSectionSize[2], maxSectionSize[3]))
 gameDisplay.fill((255, 255, 255))
 
-showGrpThread = threading.Thread(target=showGrp)
-showGrpThread.start()
 
 
 miyu = pygame.image.load(os.path.join(imgPath, 'miyu.png'))
@@ -554,9 +564,86 @@ gameManager.initSummon()
 
 #game loop
 prevTime = time.time()
+'''
+1. 교배 시킴
+2. 기다림.
+3. 모든 애들이 교배가 끝나면,
+4. 기존에 있던 애들 제거.
+5. 그래프를 보여 줌.
+6. 버튼을 누를 때 까지 대기. (이 과정 반복.)
+
+'''
+
+globalPhase = 0 #초기화
 
 while True:
+    globalPhase += 1
+
+    nowTime = time.time()
+    deltaTime = nowTime - prevTime
+    prevTime = nowTime
     
+    
+    gameManager.coupleEntity()
+
+    while(not len(notMatedEntity) == 0): #모두 교배 할 때 까지 교배.
+        nowTime = time.time()
+        deltaTime = nowTime - prevTime
+        prevTime = nowTime
+
+        printCircumSection()
+        gameManager.moveEntity(deltaTime=deltaTime)
+        gameManager.detectCollide()
+        printGuiSection()
+
+        marker = superEntityMarker()
+
+        leftCoupleTxt = text(f"left couple :{len(notMatedEntity)}", (maxSectionSize[2] - 150, 10), (0, 0, 0), 20)
+        stepTxt = text(f"phase : {globalPhase}", (maxSectionSize[2] - 150, 30), (0, 0, 0), 20)
+        amountEntTxt = text(f"Entity Amount : {len(onBoardEntity)}", (maxSectionSize[2] - 150, 60), (0, 0, 0), 20)
+
+        gameManager.killEntity()
+
+        pygame.display.update()
+        for event in pygame.event.get():    
+            if event.type == pygame.QUIT:
+                threadAlive = False #스레드 종료
+                pygame.quit()
+                sys.exit()
+
+        gameFrame.tick(set_fps)
+
+
+    gameManager.killEntity()
+
+    isNextStep = False
+    btnSize = (100, 60)
+
+    while(not isNextStep):
+
+        nextPhase_Btn = Button((153, 204, 102), (204, 255, 153), "Play", 20, (0, 0, 0), maxSectionSize[2] - btnSize[0], maxSectionSize[3] - btnSize[1] - 10, 
+                            btnSize[0], btnSize[1], setSign, True)
+        
+        showGrp_Btn = Button((255, 153, 51), (255, 153, 120), "ShowGraph", 15, (0, 0, 0),maxSectionSize[2] - btnSize[0] - btnSize[0] - 5, maxSectionSize[3] - btnSize[1] - 10, 
+                             btnSize[0], btnSize[1], showGrp, onBoardEntity) #그래프 보는 버튼
+
+
+        pygame.display.update()
+        for event in pygame.event.get():    
+            if event.type == pygame.QUIT:
+                threadAlive = False #스레드 종료
+                pygame.quit()
+                sys.exit()
+
+        gameFrame.tick(set_fps)
+
+        
+    isNextStep = False
+
+    
+
+
+    '''
     nowTime = time.time()
     deltaTime = nowTime - prevTime
     prevTime = nowTime
@@ -580,7 +667,9 @@ while True:
     #testBtn = Button((102, 52, 153), (148, 0, 211), "allow incest", 15, (0, 0, 0), 600, 700, 100, 50, grp.showGraph, lambda: allowIncest = not allowIncest)
     amountTxt = text(f"entity amount:{len(onBoardEntity)}", (400, 700), (0, 0, 0), 20)
 
+    '''
 
+    '''
     pygame.display.update()
     for event in pygame.event.get():    
         if event.type == pygame.QUIT:
@@ -589,7 +678,7 @@ while True:
             sys.exit()
 
     gameFrame.tick(set_fps)
-
+    '''
 
 '''
 W > w
