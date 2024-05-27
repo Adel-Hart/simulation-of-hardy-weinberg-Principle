@@ -54,10 +54,10 @@ there is no migration, gene flow, admixture, mutation or selection
 *Experiment 3* shows that **the proportion of each gene pool remains nearly constant**
 
 phase1  
-[expt1-phase1](./src/referenceResults/expt1-phase1.png)
+![expt1-phase1](./src/referenceResults/expt1-phase1.png)
 
 phase2  
-[expt2-phase20](./src/referenceResults/expt1-phase20.png)
+![expt2-phase20](./src/referenceResults/expt1-phase20.png)
 
 > the proportion nearly constant.
 
@@ -66,12 +66,12 @@ phase2
 
 
 phase21  
-[expt2-phase21](./src/referenceResults/expt2-phase21.png)
-[expt2-view21](./src/referenceResults/expt2-view21.png)
-
+![expt2-phase21](./src/referenceResults/expt2-phase21.png)
+![expt2-view21](./src/referenceResults/expt2-view21.png)  
+  
 phase30  
-[expt2-phase30](./src/referenceResults/expt2-phase30.png)
-[expt2-view30](./src/referenceResults/expt2-view30.png)
+![expt2-phase30](./src/referenceResults/expt2-phase30.png)
+![expt2-view30](./src/referenceResults/expt2-view30.png)
 
 
 
