@@ -69,9 +69,9 @@ globalHealth = 20 #기본 체력
 allowIncest = False #근친가능 설정.
 
 
-getInitGenesAA = input("AA 수 : ")
-getInitGenesAa = input("Aa(aA) 수 : ")
-getInitGenesaa = input("aa 수 : ")
+getInitGenesAA = input("AA 수( < 1000 ) : ")
+getInitGenesAa = input("Aa(aA) 수 ( < 1000) : ")
+getInitGenesaa = input("aa 수( < 1000) : ")
 
 initEntityQuantity = [int(getInitGenesAA), int(getInitGenesAa), int(getInitGenesaa)]
 
@@ -259,19 +259,68 @@ class gameManager():
         global globalUid
         global globalChildNum
 
-        newGene = [random.choice(ent1.gene), random.choice(ent2.gene)]
+        
 
-        for i in range(globalChildNum):
+        for i in range(globalChildNum): #슈퍼는 자식 수 + 2 마리 낳음
 
-            globals()[f'ent-{globalUid}'] = entity(
-                                                    newGene,
-                                                    globalUid,
-                                                    random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)),
-                                                    random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)),
-                                                    (ent1.uid, ent2.uid),
-                                                    True if ent1.isSuper or ent2.isSuper else False
-                                                    ) #슈퍼 유전자는 슈퍼유전자를 따라감.
-            globalUid += 1
+            if not ent1.isSuper and not ent2.isSuper:
+                    
+                newGene = [random.choice(ent1.gene), random.choice(ent2.gene)]
+
+                globals()[f'ent-{globalUid}'] = entity(
+                                                        newGene,
+                                                        globalUid,
+                                                        random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)),
+                                                        random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)),
+                                                        (ent1.uid, ent2.uid),
+                                                        False
+                                                        ) #슈퍼 유전자는 슈퍼유전자를 따라감.
+                globalUid += 1
+
+
+            elif ent1.isSuper and not ent2.isSuper:
+                
+                newGene = ent1.gene #super 쪽 유전자가 우성 됨.
+        
+
+                globals()[f'ent-{globalUid}'] = entity(
+                                                        newGene,
+                                                        globalUid,
+                                                        random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)),
+                                                        random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)),
+                                                        (ent1.uid, ent2.uid),
+                                                        True
+                                                        ) #슈퍼 유전자는 슈퍼유전자를 따라감.
+                globalUid += 1
+            elif not ent1.isSuper and ent2.isSuper:
+                newGene = ent2.gene #super 쪽 유전자가 우성 됨.
+        
+                globals()[f'ent-{globalUid}'] = entity(
+                                                        newGene,
+                                                        globalUid,
+                                                        random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)),
+                                                        random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)),
+                                                        (ent1.uid, ent2.uid),
+                                                        True
+                                                        ) #슈퍼 유전자는 슈퍼유전자를 따라감.
+                globalUid += 1
+
+
+
+            else:
+                newGene = [random.choice(ent1.gene), random.choice(ent2.gene)] #둘다 super 면, 무작위.
+        
+
+                globals()[f'ent-{globalUid}'] = entity(
+                                                        newGene,
+                                                        globalUid,
+                                                        random.randrange(int(circumSectionSize[2] - miyuSizeX * 2)),
+                                                        random.randrange(int(circumSectionSize[3] - miyuSizeY * 2)),
+                                                        (ent1.uid, ent2.uid),
+                                                        True
+                                                        ) #슈퍼 유전자는 슈퍼유전자를 따라감.
+                globalUid += 1
+
 
         notMatedEntity.remove(ent1)
         notMatedEntity.remove(ent2)
@@ -549,7 +598,7 @@ superMiyuSizeY = int(superMiyuImgScale[3] * superMiyuSizeRatio)
 
 
 circleRange = pygame.image.load(os.path.join(imgPath, 'range.png'))
-circleRangeRatio = .1
+circleRangeRatio = .05
 
 
 
@@ -600,7 +649,7 @@ while True:
 
         leftCoupleTxt = text(f"left couple :{len(notMatedEntity)}", (maxSectionSize[2] - 150, 10), (0, 0, 0), 20)
         stepTxt = text(f"phase : {globalPhase}", (maxSectionSize[2] - 150, 30), (0, 0, 0), 20)
-        amountEntTxt = text(f"Entity Amount : {len(onBoardEntity)}", (maxSectionSize[2] - 150, 60), (0, 0, 0), 20)
+        amountEntTxt = text(f"Entity Amount : {len(onBoardEntity)}", (maxSectionSize[2] - 200, 60), (0, 0, 0), 20)
 
         gameManager.killEntity()
 
@@ -621,10 +670,10 @@ while True:
 
     while(not isNextStep):
 
-        nextPhase_Btn = Button((153, 204, 102), (204, 255, 153), "Play", 20, (0, 0, 0), maxSectionSize[2] - btnSize[0], maxSectionSize[3] - btnSize[1] - 10, 
+        nextPhase_Btn = Button((153, 204, 102), (204, 255, 153), "Play", 20, (0, 0, 0), maxSectionSize[2] - btnSize[0] - 100, maxSectionSize[3] - btnSize[1] - 10, 
                             btnSize[0], btnSize[1], setSign, True)
         
-        showGrp_Btn = Button((255, 153, 51), (255, 153, 120), "ShowGraph", 15, (0, 0, 0),maxSectionSize[2] - btnSize[0] - btnSize[0] - 5, maxSectionSize[3] - btnSize[1] - 10, 
+        showGrp_Btn = Button((255, 153, 51), (255, 153, 120), "ShowGraph", 15, (0, 0, 0),maxSectionSize[2] - btnSize[0] - btnSize[0] - 105, maxSectionSize[3] - btnSize[1] - 10, 
                              btnSize[0], btnSize[1], showGrp, onBoardEntity) #그래프 보는 버튼
 
 
