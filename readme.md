@@ -78,4 +78,9 @@ phase30
 ---
 
 it means, when in Mendelian population, the proportion of each gene pool constant. also means not in Mendelian population(By allowing natural selection to occur), the proportion of each gene pool unconstant.
+# 6. Reslt Error
 
+but real ratio has diffrence.
+i think this is caused by using "PRNG" (Pseudo-Random Number Generator).
+in principle, the randomness of transmission is truly random but,
+in program we use just pseudo random protocol. so it occured, i think
